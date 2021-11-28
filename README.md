@@ -7,3 +7,7 @@ Giving machine an ability that is able to transcript raw music sheets.
 - `changed-N` and `velocity-N` features must be separated with different losses and metrics.
   - `changed-N`: loss=`binary-crossentropy`, activations=`sigmoid`
   - `velocity-N`: loss=`mean-squared-error`, activations=`linear`
+
+## TO-DO
+- [ ] Separate issued features
+- [ ] Fix Gradient Vanishing
