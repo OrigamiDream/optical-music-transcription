@@ -43,17 +43,20 @@ def create_timeseries_iterator(dir_path) -> (np.ndarray, MultiOutputTimeseriesGe
     time_data_y = data_y[['tick_to_wait']]
     offset_data_y = data_y[['offset_x_ratio', 'offset_y_ratio']]
     condition_data_y = data_y[['transit_page', 'end_of_measure']]
-    note_columns = []
+    notes_changed = []
+    notes_velocity = []
     for i in range(128):
-        note_columns.append('changed-{}'.format(i))
-        note_columns.append('velocity-{}'.format(i))
-    notes_data_y = data_y[note_columns]
+        notes_changed.append('changed-{}'.format(i))
+        notes_velocity.append('velocity-{}'.format(i))
+    notes_changed_y = data_y[notes_changed]
+    notes_velocity_y = data_y[notes_velocity]
 
     targets = {
         'time': time_data_y.to_numpy(),
         'offset': offset_data_y.to_numpy(),
         'condition': condition_data_y.to_numpy(),
-        'notes': notes_data_y.to_numpy()
+        'notes_changed': notes_changed_y.to_numpy(),
+        'notes_velocity': notes_velocity_y.to_numpy()
     }
 
     timeseries_iter = MultiOutputTimeseriesGenerator(data_X,
@@ -70,11 +73,12 @@ train_iter = ListMultiOutputTimeseriesGenerator([train_iter1, train_iter2])
 valid_X, valid_iter = create_timeseries_iterator(valid_ds_dir)
 print('Timeseries iterators have been created.')
 
-filepath = 'weights.hdf5'
+filepath = 'best_weights.hdf5'
 callbacks = [EarlyStopping(monitor='val_loss', patience=50, verbose=1),
              ModelCheckpoint(filepath, monitor='val_loss', save_best_only=True, verbose=1)]
 
 omr = OpticalMusicTranscriptionNetwork(timesteps=timesteps)
+# omr.save_model_plot(filename='omt-model.png')
 if os.path.exists(filepath):
     omr.load_model(filepath)
 else:
@@ -106,6 +110,8 @@ def choose_images_to_eval(dir_path, from_tick, to_tick):
     test_df = df[mask]
     num_features = len(test_df)
 
+    ticks = test_df['current_tick']
+
     first_index = test_df.index[0] - (timesteps - 1)
     last_index = test_df.index[-1]
 
@@ -115,7 +121,7 @@ def choose_images_to_eval(dir_path, from_tick, to_tick):
     X = [np.asarray(cv2.imread(path, cv2.IMREAD_GRAYSCALE), dtype=np.uint8) for path in img_paths]
     X = np.array(X)
     X = X / 255.
-    return X, num_features
+    return X, num_features, ticks.values
 
 
 def create_timeseries_tensor(data, num_indices):
@@ -130,7 +136,7 @@ def create_timeseries_tensor(data, num_indices):
 
 
 print('Choosing images')
-test_X, features = choose_images_to_eval(dir_path=valid_ds_dir, from_tick=155747, to_tick=167040)
+test_X, features, ticks = choose_images_to_eval(dir_path=train1_ds_dir, from_tick=32159, to_tick=37780)
 test_X = create_timeseries_tensor(test_X, features)
 
 test_one = test_X[100]
@@ -139,14 +145,15 @@ test_one_step = test_one[0] * 255
 plt.imshow(test_one_step, cmap=plt.cm.gray)
 plt.show()
 
-from_index = 50
-steps = 20
+from_index = 0
+steps = 50
 
 print('Predicting a simple timeseries tensor')
 result = omr.get_model().predict(test_X[from_index:from_index + steps])
 with open('res.csv', 'w') as csv_file:
+    csv_file.write('current_tick,tick_to_wait,offset_x_ratio,offset_y_ratio,transit_page,end_of_measure\n')
     for i in range(steps):
         time = result[0][i]
         offset = result[1][i]
         condition = result[2][i]
-        csv_file.write(f'{time[0]},{offset[0]},{offset[1]},{condition[0]},{condition[1]}\n')
+        csv_file.write(f'{ticks[i]},{time[0]},{offset[0]},{offset[1]},{condition[0]},{condition[1]}\n')

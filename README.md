@@ -9,5 +9,5 @@ Giving machine an ability that is able to transcript raw music sheets.
   - `velocity-N`: loss=`mean-squared-error`, activations=`linear`
 
 ## TO-DO
-- [ ] Separate issued features
+- [x] Separate issued features
 - [ ] Fix Gradient Vanishing
