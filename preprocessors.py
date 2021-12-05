@@ -28,6 +28,7 @@ def preprocess_features(ds_dir):
 def preprocess_frame(img_path):
     img = cv2.imread(img_path, cv2.IMREAD_GRAYSCALE)
     _, img = cv2.threshold(img, 127, 255, cv2.THRESH_BINARY)
+    img = 255 - img
     img = cv2.resize(img, (448, 448), interpolation=cv2.INTER_AREA)
     return img  # 448x448x1
 

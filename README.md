@@ -10,4 +10,4 @@ Giving machine an ability that is able to transcript raw music sheets.
 
 ## TO-DO
 - [x] Separate issued features
-- [ ] Fix Gradient Vanishing
+- [x] Fix Gradient Exploding
